@@ -144,21 +144,21 @@ class PetWindow(QWidget):
 
     # ---- popup ----
     def _place_near_pet(self, widget):
-        """Đặt widget cạnh pet, clamp trong vùng màn hình đang chứa pet."""
+        """Đặt widget LÊN TRÊN đầu pet, canh giữa, clamp trong màn hình."""
         widget.adjustSize()
         pet = self.frameGeometry()
         screen = QGuiApplication.screenAt(pet.center()) or QGuiApplication.primaryScreen()
         area = screen.availableGeometry()
         ww, wh = widget.width(), widget.height()
 
-        # ưu tiên đặt bên trái pet, không đủ thì bên phải
-        x = pet.left() - ww + 8
-        if x < area.left():
-            x = pet.right() - 8
+        # canh giữa ngang theo pet
+        x = pet.center().x() - ww // 2
         x = max(area.left(), min(x, area.right() - ww))
 
-        # canh giữa theo chiều dọc của pet, clamp trên/dưới
-        y = pet.center().y() - wh // 2
+        # ưu tiên phía trên pet, không đủ chỗ thì xuống dưới
+        y = pet.top() - wh + 8
+        if y < area.top():
+            y = pet.bottom() - 8
         y = max(area.top(), min(y, area.bottom() - wh))
 
         widget.move(x, y)

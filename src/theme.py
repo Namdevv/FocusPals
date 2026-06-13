@@ -20,23 +20,23 @@ QSS = f"""
     border-radius: 18px;
     border: 1px solid {BORDER};
 }}
-QLabel {{ color: {TEXT}; font-size: 13px; }}
-#title {{ color: {TEXT}; font-size: 16px; font-weight: 700; }}
-#section {{ color: {SUBTEXT}; font-size: 11px; font-weight: 600;
+QLabel {{ color: {TEXT}; font-size: 12px; }}
+#title {{ color: {TEXT}; font-size: 14px; font-weight: 700; }}
+#section {{ color: {SUBTEXT}; font-size: 10px; font-weight: 600;
     letter-spacing: 1px; }}
-#hint {{ color: {SUBTEXT}; font-size: 11px; }}
-#value {{ color: {SUBTEXT}; font-size: 12px; font-weight: 600; }}
+#hint {{ color: {SUBTEXT}; font-size: 10px; }}
+#value {{ color: {SUBTEXT}; font-size: 11px; font-weight: 600; }}
 
-#timeBig {{ color: {TEXT}; font-size: 46px; font-weight: 800; }}
+#timeBig {{ color: {TEXT}; font-size: 36px; font-weight: 800; }}
 
 /* preset pills */
 QPushButton[pill="true"] {{
     background: {SURFACE};
     color: {SUBTEXT};
     border: 1px solid {BORDER};
-    border-radius: 16px;
-    padding: 7px 0;
-    font-size: 13px; font-weight: 600;
+    border-radius: 13px;
+    padding: 6px 0;
+    font-size: 12px; font-weight: 600;
 }}
 QPushButton[pill="true"]:hover {{ background: {SURFACE2}; color: {TEXT}; }}
 QPushButton[pill="true"][on="true"] {{
@@ -50,23 +50,23 @@ QPushButton[step="true"] {{
     background: {SURFACE};
     color: {TEXT};
     border: 1px solid {BORDER};
-    border-radius: 15px;
-    font-size: 18px; font-weight: 700;
-    min-width: 30px; max-width: 30px; min-height: 30px; max-height: 30px;
+    border-radius: 13px;
+    font-size: 16px; font-weight: 700;
+    min-width: 26px; max-width: 26px; min-height: 26px; max-height: 26px;
 }}
 QPushButton[step="true"]:hover {{ background: {SURFACE2}; }}
 
 /* primary / danger */
 QPushButton#primary {{
     background: {ACCENT}; color: white;
-    border: none; border-radius: 13px;
-    padding: 11px; font-size: 14px; font-weight: 700;
+    border: none; border-radius: 11px;
+    padding: 9px; font-size: 13px; font-weight: 700;
 }}
 QPushButton#primary:hover {{ background: {ACCENT_HI}; }}
 QPushButton#danger {{
     background: {DANGER}; color: #2a0c12;
-    border: none; border-radius: 13px;
-    padding: 11px; font-size: 14px; font-weight: 700;
+    border: none; border-radius: 11px;
+    padding: 9px; font-size: 13px; font-weight: 700;
 }}
 QPushButton#danger:hover {{ background: #ff8497; }}
 
@@ -81,8 +81,8 @@ QPushButton#ghost:hover {{ background: {SURFACE2}; }}
 /* combo */
 QComboBox {{
     background: {SURFACE}; color: {TEXT};
-    border: 1px solid {BORDER}; border-radius: 11px;
-    padding: 8px 12px; font-size: 13px;
+    border: 1px solid {BORDER}; border-radius: 10px;
+    padding: 7px 11px; font-size: 12px;
 }}
 QComboBox:hover {{ border: 1px solid {ACCENT}; }}
 QComboBox::drop-down {{ border: none; width: 24px; }}

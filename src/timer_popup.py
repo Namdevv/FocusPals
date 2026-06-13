@@ -42,17 +42,17 @@ class TimerPopup(QWidget):
 
     def _build(self):
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(22, 22, 22, 22)  # chừa chỗ cho shadow
+        outer.setContentsMargins(18, 18, 18, 18)  # chừa chỗ cho shadow
         card = QFrame()
         card.setObjectName("card")
-        card.setFixedWidth(300)
+        card.setFixedWidth(232)
         theme.card_shadow(card)
         outer.addWidget(card)
         self.setStyleSheet(theme.QSS)
 
         lay = QVBoxLayout(card)
-        lay.setContentsMargins(22, 20, 22, 22)
-        lay.setSpacing(14)
+        lay.setContentsMargins(16, 14, 16, 16)
+        lay.setSpacing(9)
 
         title = QLabel("⏱  Focus")
         title.setObjectName("title")
@@ -66,7 +66,7 @@ class TimerPopup(QWidget):
 
         # preset pills
         grid = QGridLayout()
-        grid.setSpacing(8)
+        grid.setSpacing(6)
         for i, m in enumerate(PRESETS):
             b = QPushButton(f"{m}m")
             b.setProperty("pill", True)
