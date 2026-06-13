@@ -28,9 +28,16 @@
   <!-- lottie-web local; nếu chưa có file -> fallback CDN -->
   <script src="../assets/lottie/lottie-web.min.js" onerror="loadCDN()"></script>
   <script>
-    var PET_DIR = "../assets/pet";
+    var PET_BASE = "../assets/pet";
+    var SKIN = "";            // "" = mặc định; hoặc tên folder skin
     var anim = null;
+    var current = "idle";
     var EMOJI = { idle: "🐱", focus: "🐱", break: "😺", done: "🎉" };
+
+    function petDir() { return SKIN ? PET_BASE + "/" + SKIN : PET_BASE; }
+
+    // Python gọi: setSkin('cat') hoặc setSkin('')
+    function setSkin(s) { SKIN = s || ""; setState(current); }
 
     function loadCDN() {
       var s = document.createElement("script");
@@ -41,6 +48,7 @@
 
     // Python gọi qua runJavaScript("setState('focus')")
     function setState(name) {
+      current = name;
       var emoji = document.getElementById("emoji");
       emoji.textContent = EMOJI[name] || "🐱";
 
@@ -49,7 +57,7 @@
         emoji.style.display = "block";
         return;
       }
-      var url = PET_DIR + "/" + name + ".json";
+      var url = petDir() + "/" + name + ".json";
       fetch(url)
         .then(function (r) { if (!r.ok) throw new Error("no file"); return r.json(); })
         .then(function (data) {

@@ -17,6 +17,11 @@ DEFAULTS = {
     "last_music": "",
     "pet_pos": None,
     "last_minutes": 25,
+    "pet_skin": "",          # "" = mặc định (file ở assets/pet/), hoặc tên folder skin
+    "pet_size": 200,         # px
+    "opacity": 100,          # 30..100
+    "always_on_top": True,
+    "autostart": False,
 }
 
 

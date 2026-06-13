@@ -21,6 +21,8 @@ def make_tray(app, window):
     menu.addAction("Mở / đóng Timer", window.toggle_popup)
     menu.addAction("Dừng focus", window.stop_focus)
     menu.addSeparator()
+    menu.addAction("⚙  Cài đặt", window.open_settings)
+    menu.addSeparator()
     menu.addAction("Thoát", app.quit)
     tray.setContextMenu(menu)
 

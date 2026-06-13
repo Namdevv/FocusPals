@@ -5,12 +5,13 @@ from PySide6.QtCore import Qt, QTimer, QUrl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QWidget
+from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
 from . import storage
 from .music_player import MusicPlayer
 from .notify import notify
 from .paths import resource_path
+from .settings_dialog import SettingsDialog
 from .states import PetState
 from .timer import CountdownTimer
 from .timer_popup import TimerPopup
@@ -31,6 +32,8 @@ class _Overlay(QWidget):
     def mousePressEvent(self, e):
         if e.button() == Qt.LeftButton:
             self.win.on_press(e.globalPosition().toPoint())
+        elif e.button() == Qt.RightButton:
+            self.win.show_context_menu(e.globalPosition().toPoint())
 
     def mouseMoveEvent(self, e):
         if e.buttons() & Qt.LeftButton:
@@ -50,12 +53,12 @@ class PetWindow(QWidget):
         self._drag_off = None
         self._press_pos = None
         self._moved = False
+        self._size = int(self.settings.get("pet_size", PET_SIZE))
 
-        self.setWindowFlags(
-            Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
-        )
+        self._apply_flags(bool(self.settings.get("always_on_top", True)))
         self.setAttribute(Qt.WA_TranslucentBackground)
-        self.resize(PET_SIZE, PET_SIZE)
+        self.setWindowOpacity(int(self.settings.get("opacity", 100)) / 100.0)
+        self.resize(self._size, self._size)
 
         # web view render Lottie
         self.view = QWebEngineView(self)
@@ -65,13 +68,14 @@ class PetWindow(QWidget):
         s = self.view.settings()
         s.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
         s.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
-        self.view.setGeometry(0, 0, PET_SIZE, PET_SIZE)
+        self.view.setGeometry(0, 0, self._size, self._size)
         html = resource_path(os.path.join("src", "pet_view.html"))
+        self.view.loadFinished.connect(self._on_loaded)
         self.view.load(QUrl.fromLocalFile(html))
 
         # overlay bắt mouse
         self.overlay = _Overlay(self)
-        self.overlay.setGeometry(0, 0, PET_SIZE, PET_SIZE)
+        self.overlay.setGeometry(0, 0, self._size, self._size)
         self.overlay.raise_()
 
         # core
@@ -85,7 +89,21 @@ class PetWindow(QWidget):
         self.popup.startRequested.connect(self.start_focus)
         self.popup.stopRequested.connect(self.stop_focus)
 
+        self.settings_dialog = SettingsDialog(self)
+
         self._restore_pos()
+
+    def _on_loaded(self, ok):
+        # áp skin đã lưu sau khi trang load xong
+        skin = self.settings.get("pet_skin", "")
+        if skin:
+            self.apply_skin(skin)
+
+    def _apply_flags(self, on_top: bool):
+        flags = Qt.FramelessWindowHint | Qt.Tool
+        if on_top:
+            flags |= Qt.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
 
     # ---- vị trí ----
     def _restore_pos(self):
@@ -137,6 +155,45 @@ class PetWindow(QWidget):
     # ---- pet state ----
     def set_state(self, state: PetState):
         self.view.page().runJavaScript(f"setState('{state.value}')")
+
+    # ---- settings apply (gọi từ SettingsDialog, live) ----
+    def show_context_menu(self, gpos):
+        menu = QMenu()
+        menu.addAction("Mở / đóng Timer", self.toggle_popup)
+        if self.timer.is_running():
+            menu.addAction("Dừng focus", self.stop_focus)
+        menu.addSeparator()
+        menu.addAction("⚙  Cài đặt", self.open_settings)
+        menu.addSeparator()
+        menu.addAction("Thoát", QApplication.quit)
+        menu.exec(gpos)
+
+    def open_settings(self):
+        self.settings_dialog.show()
+        geo = self.frameGeometry()
+        x = geo.left() - self.settings_dialog.width() - 12
+        if x < 0:
+            x = geo.right() + 12
+        self.settings_dialog.move(max(0, x), max(0, geo.top()))
+
+    def apply_size(self, px: int):
+        self._size = int(px)
+        self.resize(self._size, self._size)
+        self.view.setGeometry(0, 0, self._size, self._size)
+        self.overlay.setGeometry(0, 0, self._size, self._size)
+
+    def apply_opacity(self, pct: int):
+        self.setWindowOpacity(max(0.3, min(1.0, pct / 100.0)))
+
+    def apply_skin(self, skin: str):
+        safe = (skin or "").replace("'", "\\'")
+        self.view.page().runJavaScript(f"setSkin('{safe}')")
+
+    def set_always_on_top(self, on: bool):
+        pos = self.pos()
+        self._apply_flags(on)
+        self.move(pos)
+        self.show()  # re-apply flags cần show lại
 
     # ---- focus flow ----
     def start_focus(self, minutes: int, music_path: str, volume: int):
