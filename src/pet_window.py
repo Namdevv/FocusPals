@@ -1,7 +1,7 @@
 """Pet window: frameless, trong suốt, always-on-top, drag/click, render Lottie."""
 import os
 
-from PySide6.QtCore import Qt, QTimer, QUrl
+from PySide6.QtCore import QPoint, Qt, QTimer, QUrl
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWebEngineCore import QWebEngineSettings
 from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -109,10 +109,15 @@ class PetWindow(QWidget):
     def _restore_pos(self):
         pos = self.settings.get("pet_pos")
         if pos and isinstance(pos, (list, tuple)) and len(pos) == 2:
-            self.move(int(pos[0]), int(pos[1]))
+            x, y = int(pos[0]), int(pos[1])
+            screen = QGuiApplication.screenAt(QPoint(x, y))
+            area = (screen or QGuiApplication.primaryScreen()).availableGeometry()
+            x = max(area.left(), min(x, area.right() - self._size))
+            y = max(area.top(), min(y, area.bottom() - self._size))
+            self.move(x, y)
         else:
-            geo = QGuiApplication.primaryScreen().availableGeometry()
-            self.move(geo.right() - PET_SIZE - 40, geo.bottom() - PET_SIZE - 60)
+            area = QGuiApplication.primaryScreen().availableGeometry()
+            self.move(area.right() - self._size - 40, area.bottom() - self._size - 60)
 
     # ---- drag / click ----
     def on_press(self, gpos):
@@ -138,16 +143,32 @@ class PetWindow(QWidget):
         self._drag_off = None
 
     # ---- popup ----
+    def _place_near_pet(self, widget):
+        """Đặt widget cạnh pet, clamp trong vùng màn hình đang chứa pet."""
+        widget.adjustSize()
+        pet = self.frameGeometry()
+        screen = QGuiApplication.screenAt(pet.center()) or QGuiApplication.primaryScreen()
+        area = screen.availableGeometry()
+        ww, wh = widget.width(), widget.height()
+
+        # ưu tiên đặt bên trái pet, không đủ thì bên phải
+        x = pet.left() - ww + 8
+        if x < area.left():
+            x = pet.right() - 8
+        x = max(area.left(), min(x, area.right() - ww))
+
+        # canh giữa theo chiều dọc của pet, clamp trên/dưới
+        y = pet.center().y() - wh // 2
+        y = max(area.top(), min(y, area.bottom() - wh))
+
+        widget.move(x, y)
+
     def toggle_popup(self):
         if self.popup.isVisible():
             self.popup.hide()
             return
-        self.popup.adjustSize()
-        geo = self.frameGeometry()
-        x = geo.left() - self.popup.width() - 12
-        if x < 0:
-            x = geo.right() + 12
-        self.popup.move(x, geo.top())
+        self.settings_dialog.hide()      # mở Timer -> tắt Settings
+        self._place_near_pet(self.popup)
         self.popup.show()
         self.popup.raise_()
         self.popup.activateWindow()
@@ -169,12 +190,12 @@ class PetWindow(QWidget):
         menu.exec(gpos)
 
     def open_settings(self):
+        if self.settings_dialog.isVisible():
+            self.settings_dialog.hide()
+            return
+        self.popup.hide()                # mở Settings -> tắt Timer
         self.settings_dialog.show()
-        geo = self.frameGeometry()
-        x = geo.left() - self.settings_dialog.width() - 12
-        if x < 0:
-            x = geo.right() + 12
-        self.settings_dialog.move(max(0, x), max(0, geo.top()))
+        self._place_near_pet(self.settings_dialog)
 
     def apply_size(self, px: int):
         self._size = int(px)
