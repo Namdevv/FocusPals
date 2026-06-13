@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# App data / local
+*.db
+settings.json
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Assets binari do user tự thêm (giữ README)
+assets/lottie/lottie-web.min.js
+assets/pet/*.json
+assets/music/*.mp3
+assets/music/*.wav
+assets/music/*.ogg
+assets/music/*.m4a
+assets/music/*.flac
+assets/icon.ico

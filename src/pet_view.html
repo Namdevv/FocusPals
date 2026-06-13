@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body {
+    margin: 0; padding: 0;
+    background: transparent;
+    overflow: hidden;
+    width: 100%; height: 100%;
+  }
+  #pet {
+    width: 100vw; height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+  }
+  #emoji {
+    font-size: 120px; line-height: 1;
+    filter: drop-shadow(0 6px 8px rgba(0,0,0,.35));
+    user-select: none;
+  }
+  .bounce { animation: b 1.6s ease-in-out infinite; }
+  @keyframes b { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+</style>
+</head>
+<body>
+  <div id="pet"><div id="emoji" class="bounce">🐱</div></div>
+
+  <!-- lottie-web local; nếu chưa có file -> fallback CDN -->
+  <script src="../assets/lottie/lottie-web.min.js" onerror="loadCDN()"></script>
+  <script>
+    var PET_DIR = "../assets/pet";
+    var anim = null;
+    var EMOJI = { idle: "🐱", focus: "🐱", break: "😺", done: "🎉" };
+
+    function loadCDN() {
+      var s = document.createElement("script");
+      s.src = "https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js";
+      s.onload = function () { if (window.__pending) setState(window.__pending); };
+      document.head.appendChild(s);
+    }
+
+    // Python gọi qua runJavaScript("setState('focus')")
+    function setState(name) {
+      var emoji = document.getElementById("emoji");
+      emoji.textContent = EMOJI[name] || "🐱";
+
+      if (typeof lottie === "undefined") {
+        window.__pending = name;   // lottie-web chưa load xong
+        emoji.style.display = "block";
+        return;
+      }
+      var url = PET_DIR + "/" + name + ".json";
+      fetch(url)
+        .then(function (r) { if (!r.ok) throw new Error("no file"); return r.json(); })
+        .then(function (data) {
+          emoji.style.display = "none";
+          if (anim) anim.destroy();
+          anim = lottie.loadAnimation({
+            container: document.getElementById("pet"),
+            renderer: "svg", loop: true, autoplay: true,
+            animationData: data,
+          });
+        })
+        .catch(function () {
+          // chưa có file Lottie -> hiện emoji placeholder
+          if (anim) { anim.destroy(); anim = null; }
+          emoji.style.display = "block";
+        });
+    }
+
+    window.addEventListener("load", function () { setState("idle"); });
+  </script>
+</body>
+</html>
