@@ -1,4 +1,4 @@
-"""Popup set thời gian focus + chọn nhạc + volume + countdown."""
+"""Popup focus timer: time display lớn, preset pills, ± stepper, nhạc, volume."""
 import os
 
 from PySide6.QtCore import Qt, Signal
@@ -6,36 +6,21 @@ from PySide6.QtWidgets import (
     QComboBox,
     QFileDialog,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QPushButton,
     QSlider,
-    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
-from . import storage
+from . import storage, theme
 from .paths import asset
 
 AUDIO_EXT = (".mp3", ".wav", ".ogg", ".m4a", ".flac")
-
-STYLE = """
-#card { background: #1e1f29; border-radius: 14px; border: 1px solid #33344a; }
-QLabel { color: #c9cbe0; font-size: 12px; }
-#title { color: #ffffff; font-size: 15px; font-weight: bold; }
-#count { color: #8be9fd; font-size: 30px; font-weight: bold; }
-QSpinBox, QComboBox { background: #2a2b3a; color: #eee; border: 1px solid #3c3d52;
-    border-radius: 6px; padding: 4px; }
-QPushButton { background: #3a3c52; color: #eee; border: none; border-radius: 6px;
-    padding: 6px 10px; }
-QPushButton:hover { background: #4a4d68; }
-#start { background: #50fa7b; color: #11231a; font-weight: bold; }
-#start:hover { background: #66ff90; }
-QSlider::groove:horizontal { height: 5px; background: #3c3d52; border-radius: 2px; }
-QSlider::handle:horizontal { background: #8be9fd; width: 14px; margin: -5px 0;
-    border-radius: 7px; }
-"""
+PRESETS = [15, 25, 45, 60]
+MIN_M, MAX_M, STEP_M = 1, 180, 5
 
 
 class TimerPopup(QWidget):
@@ -50,70 +35,129 @@ class TimerPopup(QWidget):
         self.setAttribute(Qt.WA_TranslucentBackground)
         self.s = storage.load_settings()
         self._running = False
+        self._minutes = int(self.s.get("last_minutes", 25))
+        self._pills = {}
         self._build()
+        self._refresh_time()
 
     def _build(self):
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setContentsMargins(22, 22, 22, 22)  # chừa chỗ cho shadow
         card = QFrame()
         card.setObjectName("card")
+        card.setFixedWidth(300)
+        theme.card_shadow(card)
         outer.addWidget(card)
-        self.setStyleSheet(STYLE)
+        self.setStyleSheet(theme.QSS)
 
         lay = QVBoxLayout(card)
-        lay.setContentsMargins(16, 16, 16, 16)
-        lay.setSpacing(10)
+        lay.setContentsMargins(22, 20, 22, 22)
+        lay.setSpacing(14)
 
-        title = QLabel("⏱  Focus Timer")
+        title = QLabel("⏱  Focus")
         title.setObjectName("title")
         lay.addWidget(title)
 
-        # phút + preset
-        row = QHBoxLayout()
-        self.spin = QSpinBox()
-        self.spin.setRange(1, 180)
-        self.spin.setSuffix(" phút")
-        self.spin.setValue(int(self.s.get("last_minutes", 25)))
-        b25 = QPushButton("25")
-        b50 = QPushButton("50")
-        b25.clicked.connect(lambda: self.spin.setValue(25))
-        b50.clicked.connect(lambda: self.spin.setValue(50))
-        row.addWidget(self.spin, 1)
-        row.addWidget(b25)
-        row.addWidget(b50)
-        lay.addLayout(row)
+        # time display lớn (vừa là setup vừa là countdown)
+        self.time_lbl = QLabel("25:00")
+        self.time_lbl.setObjectName("timeBig")
+        self.time_lbl.setAlignment(Qt.AlignCenter)
+        lay.addWidget(self.time_lbl)
+
+        # preset pills
+        grid = QGridLayout()
+        grid.setSpacing(8)
+        for i, m in enumerate(PRESETS):
+            b = QPushButton(f"{m}m")
+            b.setProperty("pill", True)
+            b.setCursor(Qt.PointingHandCursor)
+            b.clicked.connect(lambda _=False, mm=m: self._set_minutes(mm))
+            grid.addWidget(b, 0, i)
+            self._pills[m] = b
+        lay.addLayout(grid)
+        self.presets_row = grid
+
+        # custom ± stepper
+        step = QHBoxLayout()
+        step.setSpacing(12)
+        minus = QPushButton("−")
+        minus.setProperty("step", True)
+        minus.setCursor(Qt.PointingHandCursor)
+        minus.clicked.connect(lambda: self._set_minutes(self._minutes - STEP_M))
+        plus = QPushButton("+")
+        plus.setProperty("step", True)
+        plus.setCursor(Qt.PointingHandCursor)
+        plus.clicked.connect(lambda: self._set_minutes(self._minutes + STEP_M))
+        self.custom_lbl = QLabel("tùy chỉnh")
+        self.custom_lbl.setObjectName("value")
+        self.custom_lbl.setAlignment(Qt.AlignCenter)
+        step.addStretch()
+        step.addWidget(minus)
+        step.addWidget(self.custom_lbl)
+        step.addWidget(plus)
+        step.addStretch()
+        lay.addLayout(step)
+        self._stepper = [minus, plus]
 
         # nhạc
-        lay.addWidget(QLabel("Nhạc focus:"))
+        sec1 = QLabel("NHẠC")
+        sec1.setObjectName("section")
+        lay.addWidget(sec1)
         self.music = QComboBox()
+        self.music.setCursor(Qt.PointingHandCursor)
         lay.addWidget(self.music)
-        add = QPushButton("➕  Thêm nhạc từ máy...")
+        add = QPushButton("➕  Thêm nhạc từ máy")
+        add.setObjectName("ghost")
+        add.setCursor(Qt.PointingHandCursor)
         add.clicked.connect(self._add_music)
         lay.addWidget(add)
         self._load_music()
 
         # volume
-        lay.addWidget(QLabel("Âm lượng:"))
+        vrow = QHBoxLayout()
+        vsec = QLabel("ÂM LƯỢNG")
+        vsec.setObjectName("section")
+        self.vol_val = QLabel("")
+        self.vol_val.setObjectName("value")
+        self.vol_val.setAlignment(Qt.AlignRight)
+        vrow.addWidget(vsec)
+        vrow.addWidget(self.vol_val)
+        lay.addLayout(vrow)
         self.vol = QSlider(Qt.Horizontal)
         self.vol.setRange(0, 100)
         self.vol.setValue(int(self.s.get("volume", 60)))
+        self.vol.valueChanged.connect(lambda v: self.vol_val.setText(f"{v}%"))
+        self.vol_val.setText(f"{self.vol.value()}%")
         lay.addWidget(self.vol)
 
-        # countdown
-        self.count = QLabel("")
-        self.count.setObjectName("count")
-        self.count.setAlignment(Qt.AlignCenter)
-        lay.addWidget(self.count)
-
-        # start/stop
+        # start / stop
         self.btn = QPushButton("▶  Bắt đầu")
-        self.btn.setObjectName("start")
+        self.btn.setObjectName("primary")
+        self.btn.setCursor(Qt.PointingHandCursor)
         self.btn.clicked.connect(self._toggle)
         lay.addWidget(self.btn)
 
+    # ---- minutes ----
+    def _set_minutes(self, m):
+        self._minutes = max(MIN_M, min(MAX_M, int(m)))
+        self._refresh_time()
+
+    def _refresh_time(self):
+        if not self._running:
+            self.time_lbl.setText(f"{self._minutes:02d}:00")
+        is_preset = self._minutes in self._pills
+        for m, b in self._pills.items():
+            b.setProperty("on", m == self._minutes)
+            b.style().unpolish(b)
+            b.style().polish(b)
+        self.custom_lbl.setText(
+            "tùy chỉnh" if is_preset else f"{self._minutes} phút"
+        )
+
+    # ---- music ----
     def _load_music(self, select: str = None):
         self.music.clear()
-        self.music.addItem("(Không nhạc)", "")
+        self.music.addItem("🔇  Không nhạc", "")
         d = asset("music")
         if os.path.isdir(d):
             for f in sorted(os.listdir(d)):
@@ -136,25 +180,39 @@ class TimerPopup(QWidget):
             self.music.addItem("🎵  " + os.path.basename(f), f)
             self.music.setCurrentIndex(self.music.count() - 1)
 
+    # ---- start/stop ----
     def _toggle(self):
         if self._running:
             self.stopRequested.emit()
         else:
             self.startRequested.emit(
-                self.spin.value(), self.music.currentData() or "", self.vol.value()
+                self._minutes, self.music.currentData() or "", self.vol.value()
             )
 
-    # gọi bởi PetWindow
+    def _set_controls_enabled(self, on: bool):
+        for b in self._pills.values():
+            b.setEnabled(on)
+        for b in self._stepper:
+            b.setEnabled(on)
+        self.music.setEnabled(on)
+
     def set_running(self, on: bool):
         self._running = on
-        self.btn.setText("■  Dừng" if on else "▶  Bắt đầu")
-        self.spin.setEnabled(not on)
-        self.music.setEnabled(not on)
+        if on:
+            self.btn.setText("■  Dừng")
+            self.btn.setObjectName("danger")
+        else:
+            self.btn.setText("▶  Bắt đầu")
+            self.btn.setObjectName("primary")
+        self.btn.style().unpolish(self.btn)
+        self.btn.style().polish(self.btn)
+        self._set_controls_enabled(not on)
+        if not on:
+            self._refresh_time()
 
     def set_remaining(self, secs: int):
         m, s = divmod(max(0, secs), 60)
-        self.count.setText(f"{m:02d}:{s:02d}")
+        self.time_lbl.setText(f"{m:02d}:{s:02d}")
 
     def set_idle(self):
         self.set_running(False)
-        self.count.setText("")
