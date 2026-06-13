@@ -25,8 +25,6 @@
 <body>
   <div id="pet"><div id="emoji" class="bounce">🐱</div></div>
 
-  <!-- lottie-web local; nếu chưa có file -> fallback CDN -->
-  <script src="../assets/lottie/lottie-web.min.js" onerror="loadCDN()"></script>
   <script>
     var PET_BASE = "../assets/pet";
     var SKIN = "";            // "" = mặc định; hoặc tên folder skin
@@ -39,22 +37,14 @@
     // Python gọi: setSkin('cat') hoặc setSkin('')
     function setSkin(s) { SKIN = s || ""; setState(current); }
 
-    function loadCDN() {
-      var s = document.createElement("script");
-      s.src = "https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js";
-      s.onload = function () { if (window.__pending) setState(window.__pending); };
-      document.head.appendChild(s);
-    }
-
-    // Python gọi qua runJavaScript("setState('focus')")
+    // Python gọi: setState('focus')
     function setState(name) {
       current = name;
       var emoji = document.getElementById("emoji");
       emoji.textContent = EMOJI[name] || "🐱";
 
       if (typeof lottie === "undefined") {
-        window.__pending = name;   // lottie-web chưa load xong
-        emoji.style.display = "block";
+        emoji.style.display = "block";   // lottie-web chưa sẵn sàng
         return;
       }
       var url = petDir() + "/" + name + ".json";
@@ -70,13 +60,32 @@
           });
         })
         .catch(function () {
-          // chưa có file Lottie -> hiện emoji placeholder
+          // chưa có file Lottie cho state này -> emoji placeholder
           if (anim) { anim.destroy(); anim = null; }
           emoji.style.display = "block";
         });
     }
 
-    window.addEventListener("load", function () { setState("idle"); });
+    // Load lottie-web: thử local trước, lỗi thì fallback CDN.
+    function loadLottie() {
+      var local = "../assets/lottie/lottie-web.min.js";
+      var cdn = "https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.12.2/lottie.min.js";
+      var s = document.createElement("script");
+      s.src = local;
+      s.onload = onReady;
+      s.onerror = function () {
+        var c = document.createElement("script");
+        c.src = cdn;
+        c.onload = onReady;
+        c.onerror = onReady;   // không có cả CDN -> vẫn chạy emoji
+        document.head.appendChild(c);
+      };
+      document.head.appendChild(s);
+    }
+
+    function onReady() { setState(current || "idle"); }
+
+    window.addEventListener("load", loadLottie);
   </script>
 </body>
 </html>
