@@ -1,6 +1,21 @@
 # Agent Pet Timer
 
-Desktop pet cho Windows. Click pet → set thời gian focus → đếm ngược, phát nhạc, báo khi xong.
+Desktop pet + Pomodoro timer cho Windows. Một con thú cưng nổi trên màn hình:
+click vào nó → set thời gian focus → đếm ngược, phát nhạc, đổi animation theo
+trạng thái, báo khi xong.
+
+> Render bằng **PNG sprite / spritesheet** (Qt thuần, nhẹ) — không dùng Chromium.
+> Tương thích pet pack format **petdex / [AgentPet](https://github.com/ntd4996/agentpet)**.
+
+## Tính năng
+
+- 🐾 Pet nổi trên cùng, trong suốt, kéo thả, nhớ vị trí
+- ⏱️ Timer focus (preset 25/50 phút hoặc tùy chỉnh) + popup gọn
+- 🎵 Phát nhạc focus loop, chỉnh âm lượng (nhạc bundle hoặc thêm từ máy)
+- 🎬 Animation đổi theo trạng thái: `idle / focus / break / done`
+- 🎨 Skin tùy biến: PNG rời hoặc spritesheet, thả folder vào là chạy
+- 🔔 Toast + âm báo khi hết giờ, tray icon, autostart cùng Windows
+- 💾 Lưu lịch sử focus (SQLite) tại `%APPDATA%\AgentPetTimer\`
 
 ## Chạy (dev)
 
@@ -9,18 +24,22 @@ pip install -r requirements.txt
 python main.py
 ```
 
+Yêu cầu: Python 3.10+, Windows. (`requirements.txt`: PySide6, plyer, pyinstaller)
+
 ## Dùng
 
 - **Click** pet → mở/đóng popup timer.
-- **Kéo** pet → di chuyển (nhớ vị trí).
-- Popup: chọn phút (preset 25/50 hoặc tùy chỉnh), chọn nhạc, chỉnh âm lượng, **Bắt đầu**.
-- Hết giờ: pet ăn mừng 🎉, nhạc dừng, có toast + tiếng báo.
-- **Tray icon**: mở timer / dừng / thoát.
+- **Kéo** pet → di chuyển (tự nhớ vị trí).
+- Popup: chọn phút, chọn nhạc, chỉnh âm lượng → **Bắt đầu**.
+- **Right-click** pet → menu (Timer / Cài đặt / Thoát).
+- Hết giờ: pet ăn mừng 🎉, nhạc dừng, toast + tiếng báo.
 
-## Art & nhạc (tùy chọn)
+## Thêm pet / nhạc
 
-- Pet art: bỏ vào `assets/pet/<tên_skin>/` — hỗ trợ PNG rời (`idle/focus/break/done.png`) hoặc spritesheet (1 ảnh `spritesheet.webp`, kiểu petdex/agentpet). Xem [assets/pet/README.md](assets/pet/README.md). Thiếu thì hiện emoji.
-- Nhạc preset: bỏ file vào `assets/music/`.
+- **Pet**: thả vào `assets/pet/<tên_skin>/` — PNG rời (`idle/focus/break/done.png`)
+  hoặc 1 file `spritesheet.webp`. Tự hiện trong Cài đặt. Thiếu → hiện emoji.
+  Hướng dẫn chi tiết + **prompt tạo pet bằng AI**: [assets/pet/README.md](assets/pet/README.md).
+- **Nhạc**: thả `.mp3/.wav/.ogg` vào `assets/music/` — xem [assets/music/README.md](assets/music/README.md).
 
 ## Build exe
 
@@ -28,10 +47,32 @@ python main.py
 powershell -ExecutionPolicy Bypass -File build.ps1
 ```
 
-Ra `dist/AgentPetTimer.exe`.
+Ra `dist/AgentPetTimer.exe` (onefile, đã exclude QtWebEngine cho nhẹ).
 
 ## Cấu trúc
 
-Xem [docs/planning.md](docs/planning.md).
+```
+main.py              # entry
+src/
+├─ pet_window.py     # cửa sổ pet: frameless, transparent, drag/click
+├─ pet_animator.py   # render sprite (QLabel + QTimer) + slice spritesheet
+├─ states.py         # PetState: idle/focus/break/done
+├─ timer.py          # countdown
+├─ timer_popup.py    # popup chọn thời gian
+├─ settings_dialog.py# cài đặt (skin/size/opacity/nhạc/autostart)
+├─ music_player.py   # QtMultimedia loop nhạc
+├─ storage.py        # settings JSON + history SQLite
+├─ tray.py / notify.py / autostart.py / theme.py / paths.py
+assets/pet/          # pet skins (user thêm)
+assets/music/        # nhạc (user thêm)
+```
 
-Settings + lịch sử focus lưu tại `%APPDATA%\AgentPetTimer\`.
+## Credits
+
+- Slicer spritesheet (alpha-gutter) port từ
+  [AgentPet](https://github.com/ntd4996/agentpet) (MIT, Nguyễn Thành Đạt).
+- Tương thích pet pack format petdex.
+
+## License
+
+[MIT](LICENSE) © 2026 Nam TRAN

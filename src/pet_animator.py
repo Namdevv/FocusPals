@@ -61,7 +61,11 @@ def _segments(occupancy):
 
 
 def slice_spritesheet(img: QImage, alpha_threshold: int = 16):
-    """Cắt spritesheet bằng alpha gutter -> list[list[QPixmap]] (rows=clips, cols=frames)."""
+    """Cắt spritesheet bằng alpha gutter -> list[list[QPixmap]] (rows=clips, cols=frames).
+
+    Port từ SpriteSlicer.swift của AgentPet (MIT, Nguyễn Thành Đạt):
+    https://github.com/ntd4996/agentpet
+    """
     if img.isNull():
         return []
     img = img.convertToFormat(QImage.Format.Format_RGBA8888)

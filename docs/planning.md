@@ -1,5 +1,11 @@
 # Desktop Pet + Focus Timer — Planning
 
+> ⚠️ **Tài liệu lịch sử (superseded).** Bản plan ban đầu chọn QWebEngineView +
+> lottie-web. App hiện đã **đổi sang render PNG sprite / spritesheet** (Qt thuần,
+> bỏ QtWebEngine + Lottie). Xem [README.md](../README.md) và
+> [assets/pet/README.md](../assets/pet/README.md) cho kiến trúc thật. Giữ file
+> này làm ghi chép quá trình thiết kế.
+
 ## Context
 Mục tiêu: app desktop pet cho Windows. Con pet hiển thị trên màn hình, click vào để set thời gian focus + đếm ngược. Có chọn/phát nhạc trong lúc focus. Phải build ra `.exe` cài về Windows chạy.
 

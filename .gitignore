@@ -22,7 +22,10 @@ Thumbs.db
 .idea/
 
 # Assets binari do user tự thêm (giữ README)
-assets/lottie/lottie-web.min.js
+# pet packs (PNG/spritesheet) user tự thêm — không commit, giữ README
+assets/pet/*/
+assets/pet/*.png
+assets/pet/*.webp
 assets/pet/*.json
 assets/music/*.mp3
 assets/music/*.wav
