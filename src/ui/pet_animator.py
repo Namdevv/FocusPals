@@ -6,7 +6,7 @@ Hỗ trợ 2 format skin trong assets/pet/<skin>/ (hoặc thẳng assets/pet/ ch
      - 1 file:   idle.png
      - sequence: idle_1.png, idle_2.png, ...
 
-2. Spritesheet (format petdex/agentpet): pet.json + spritesheet.(webp|png)
+2. Spritesheet (format petdex): pet.json + spritesheet.(webp|png)
      pet.json: {"spritesheetPath": "spritesheet.webp", ...}
      Sheet được cắt bằng alpha-gutter detection: mỗi ROW = 1 clip (animation),
      mỗi COLUMN trong row = 1 frame. Không cần grid metadata.
@@ -63,8 +63,7 @@ def _segments(occupancy):
 def slice_spritesheet(img: QImage, alpha_threshold: int = 16):
     """Cắt spritesheet bằng alpha gutter -> list[list[QPixmap]] (rows=clips, cols=frames).
 
-    Port từ SpriteSlicer.swift của AgentPet (MIT, Nguyễn Thành Đạt):
-    https://github.com/ntd4996/agentpet
+    Tương thích format petdex: mỗi ROW = 1 clip, mỗi COLUMN = 1 frame.
     """
     if img.isNull():
         return []

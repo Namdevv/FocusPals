@@ -21,7 +21,7 @@ Chưa có PNG cho state nào → app vẫn chạy, hiện emoji thay thế.
 
 ---
 
-## Hoặc: spritesheet (format petdex / agentpet)
+## Hoặc: spritesheet (format petdex)
 
 Thả nguyên folder pet tải từ petdex vào đây, ví dụ `assets/pet/11/`:
 

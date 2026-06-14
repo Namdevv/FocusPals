@@ -19,13 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This project's spritesheet slicing (alpha-gutter detection) is a Python port of
-SpriteSlicer.swift from the AgentPet project by Nguyễn Thành Đạt, used under the
-MIT License:
-
-    MIT License
-    Copyright (c) 2026 Nguyễn Thành Đạt
-    https://github.com/ntd4996/agentpet
