@@ -10,7 +10,9 @@ pyinstaller --noconfirm --onefile --windowed `
   --name AgentPetTimer `
   $icon `
   --add-data "assets;assets" `
-  --add-data "src\pet_view.html;src" `
+  --exclude-module PySide6.QtWebEngineCore `
+  --exclude-module PySide6.QtWebEngineWidgets `
+  --exclude-module PySide6.QtWebEngineQuick `
   main.py
 
 Write-Host ""

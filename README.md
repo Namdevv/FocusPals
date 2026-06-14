@@ -19,9 +19,8 @@ python main.py
 
 ## Art & nhạc (tùy chọn)
 
-- Pet Lottie: bỏ `idle/focus/break/done.json` vào `assets/pet/` — xem [assets/pet/README.md](assets/pet/README.md). Thiếu thì hiện emoji.
+- Pet art: bỏ vào `assets/pet/<tên_skin>/` — hỗ trợ PNG rời (`idle/focus/break/done.png`) hoặc spritesheet (1 ảnh `spritesheet.webp`, kiểu petdex/agentpet). Xem [assets/pet/README.md](assets/pet/README.md). Thiếu thì hiện emoji.
 - Nhạc preset: bỏ file vào `assets/music/`.
-- Offline lottie-web: xem [assets/lottie/README.md](assets/lottie/README.md).
 
 ## Build exe
 

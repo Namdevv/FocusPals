@@ -1,16 +1,12 @@
-"""Pet window: frameless, trong suốt, always-on-top, drag/click, render Lottie."""
-import os
-
-from PySide6.QtCore import QPoint, Qt, QTimer, QUrl
+"""Pet window: frameless, trong suốt, always-on-top, drag/click, render PNG sprite."""
+from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QGuiApplication
-from PySide6.QtWebEngineCore import QWebEngineSettings
-from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
 from . import storage
 from .music_player import MusicPlayer
 from .notify import notify
-from .paths import resource_path
+from .pet_animator import PetAnimator
 from .settings_dialog import SettingsDialog
 from .states import PetState
 from .timer import CountdownTimer
@@ -18,30 +14,6 @@ from .timer_popup import TimerPopup
 
 PET_SIZE = 200
 DRAG_THRESHOLD = 5
-
-
-class _Overlay(QWidget):
-    """Lớp trong suốt phủ lên QWebEngineView để bắt mouse (web view nuốt event)."""
-
-    def __init__(self, win):
-        super().__init__(win)
-        self.win = win
-        self.setAttribute(Qt.WA_TranslucentBackground)
-        self.setStyleSheet("background: transparent;")
-
-    def mousePressEvent(self, e):
-        if e.button() == Qt.LeftButton:
-            self.win.on_press(e.globalPosition().toPoint())
-        elif e.button() == Qt.RightButton:
-            self.win.show_context_menu(e.globalPosition().toPoint())
-
-    def mouseMoveEvent(self, e):
-        if e.buttons() & Qt.LeftButton:
-            self.win.on_move(e.globalPosition().toPoint())
-
-    def mouseReleaseEvent(self, e):
-        if e.button() == Qt.LeftButton:
-            self.win.on_release()
 
 
 class PetWindow(QWidget):
@@ -60,23 +32,13 @@ class PetWindow(QWidget):
         self.setWindowOpacity(int(self.settings.get("opacity", 100)) / 100.0)
         self.resize(self._size, self._size)
 
-        # web view render Lottie
-        self.view = QWebEngineView(self)
-        self.view.setAttribute(Qt.WA_TranslucentBackground)
-        self.view.page().setBackgroundColor(Qt.GlobalColor.transparent)
-        self.view.setContextMenuPolicy(Qt.NoContextMenu)
-        s = self.view.settings()
-        s.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True)
-        s.setAttribute(QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True)
-        self.view.setGeometry(0, 0, self._size, self._size)
-        html = resource_path(os.path.join("src", "pet_view.html"))
-        self.view.loadFinished.connect(self._on_loaded)
-        self.view.load(QUrl.fromLocalFile(html))
-
-        # overlay bắt mouse
-        self.overlay = _Overlay(self)
-        self.overlay.setGeometry(0, 0, self._size, self._size)
-        self.overlay.raise_()
+        # render pet bằng PNG sprite (mouse rớt xuống window vì label transparent-for-mouse)
+        self.animator = PetAnimator(self)
+        self.animator.setGeometry(0, 0, self._size, self._size)
+        self.animator.set_size(self._size)
+        skin = self.settings.get("pet_skin", "")
+        if skin:
+            self.animator.set_skin(skin)
 
         # core
         self.timer = CountdownTimer()
@@ -92,12 +54,6 @@ class PetWindow(QWidget):
         self.settings_dialog = SettingsDialog(self)
 
         self._restore_pos()
-
-    def _on_loaded(self, ok):
-        # áp skin đã lưu sau khi trang load xong
-        skin = self.settings.get("pet_skin", "")
-        if skin:
-            self.apply_skin(skin)
 
     def _apply_flags(self, on_top: bool):
         flags = Qt.FramelessWindowHint | Qt.Tool
@@ -120,20 +76,27 @@ class PetWindow(QWidget):
             self.move(area.right() - self._size - 40, area.bottom() - self._size - 60)
 
     # ---- drag / click ----
-    def on_press(self, gpos):
-        self._drag_off = gpos - self.frameGeometry().topLeft()
-        self._press_pos = gpos
-        self._moved = False
+    def mousePressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            gpos = e.globalPosition().toPoint()
+            self._drag_off = gpos - self.frameGeometry().topLeft()
+            self._press_pos = gpos
+            self._moved = False
+        elif e.button() == Qt.RightButton:
+            self.show_context_menu(e.globalPosition().toPoint())
 
-    def on_move(self, gpos):
-        if self._press_pos is None:
+    def mouseMoveEvent(self, e):
+        if not (e.buttons() & Qt.LeftButton) or self._press_pos is None:
             return
+        gpos = e.globalPosition().toPoint()
         if (gpos - self._press_pos).manhattanLength() > DRAG_THRESHOLD:
             self._moved = True
         if self._drag_off is not None:
             self.move(gpos - self._drag_off)
 
-    def on_release(self):
+    def mouseReleaseEvent(self, e):
+        if e.button() != Qt.LeftButton:
+            return
         if not self._moved:
             self.toggle_popup()
         else:
@@ -175,7 +138,7 @@ class PetWindow(QWidget):
 
     # ---- pet state ----
     def set_state(self, state: PetState):
-        self.view.page().runJavaScript(f"setState('{state.value}')")
+        self.animator.set_state(state)
 
     # ---- settings apply (gọi từ SettingsDialog, live) ----
     def show_context_menu(self, gpos):
@@ -200,15 +163,14 @@ class PetWindow(QWidget):
     def apply_size(self, px: int):
         self._size = int(px)
         self.resize(self._size, self._size)
-        self.view.setGeometry(0, 0, self._size, self._size)
-        self.overlay.setGeometry(0, 0, self._size, self._size)
+        self.animator.setGeometry(0, 0, self._size, self._size)
+        self.animator.set_size(self._size)
 
     def apply_opacity(self, pct: int):
         self.setWindowOpacity(max(0.3, min(1.0, pct / 100.0)))
 
     def apply_skin(self, skin: str):
-        safe = (skin or "").replace("'", "\\'")
-        self.view.page().runJavaScript(f"setSkin('{safe}')")
+        self.animator.set_skin(skin or "")
 
     def set_always_on_top(self, on: bool):
         pos = self.pos()
