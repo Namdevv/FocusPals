@@ -4,7 +4,7 @@ import os
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QMenu, QStyle, QSystemTrayIcon
 
-from .paths import asset
+from ..core.paths import asset
 
 
 def make_tray(app, window):

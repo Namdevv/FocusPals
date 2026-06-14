@@ -15,8 +15,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import storage, theme
-from .paths import asset
+from . import theme
+from ..core import storage
+from ..core.paths import asset
 
 AUDIO_EXT = (".mp3", ".wav", ".ogg", ".m4a", ".flac")
 PRESETS = [15, 25, 45, 60]

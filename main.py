@@ -5,14 +5,10 @@ import sys
 # src lên path để import package
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from PySide6.QtCore import QCoreApplication, Qt
-# QtWebEngine cần share OpenGL contexts -> set TRƯỚC khi tạo QApplication
-QCoreApplication.setAttribute(Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
-
 from PySide6.QtWidgets import QApplication
 
-from src.pet_window import PetWindow
-from src.tray import make_tray
+from src.ui.pet_window import PetWindow
+from src.ui.tray import make_tray
 
 
 def main():

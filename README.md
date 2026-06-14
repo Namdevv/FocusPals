@@ -1,4 +1,4 @@
-# Agent Pet Timer
+# FocusPals
 
 Desktop pet + Pomodoro timer cho Windows. Một con thú cưng nổi trên màn hình:
 click vào nó → set thời gian focus → đếm ngược, phát nhạc, đổi animation theo
@@ -52,19 +52,26 @@ Ra `dist/AgentPetTimer.exe` (onefile, đã exclude QtWebEngine cho nhẹ).
 ## Cấu trúc
 
 ```
-main.py              # entry
+main.py                  # entry point
 src/
-├─ pet_window.py     # cửa sổ pet: frameless, transparent, drag/click
-├─ pet_animator.py   # render sprite (QLabel + QTimer) + slice spritesheet
-├─ states.py         # PetState: idle/focus/break/done
-├─ timer.py          # countdown
-├─ timer_popup.py    # popup chọn thời gian
-├─ settings_dialog.py# cài đặt (skin/size/opacity/nhạc/autostart)
-├─ music_player.py   # QtMultimedia loop nhạc
-├─ storage.py        # settings JSON + history SQLite
-├─ tray.py / notify.py / autostart.py / theme.py / paths.py
-assets/pet/          # pet skins (user thêm)
-assets/music/        # nhạc (user thêm)
+├─ core/                 # logic thuần, không UI
+│  ├─ states.py          #   PetState: idle/focus/break/done
+│  ├─ timer.py           #   countdown
+│  ├─ storage.py         #   settings JSON + history SQLite
+│  └─ paths.py           #   resolve asset path (dev + PyInstaller)
+├─ services/             # tích hợp hệ thống
+│  ├─ music_player.py    #   QtMultimedia loop nhạc
+│  ├─ notify.py          #   toast (plyer)
+│  └─ autostart.py       #   chạy cùng Windows (registry)
+└─ ui/                   # Qt widgets
+   ├─ pet_window.py      #   cửa sổ pet: frameless, transparent, drag/click
+   ├─ pet_animator.py    #   render sprite (QLabel + QTimer) + slice spritesheet
+   ├─ settings_dialog.py #   cài đặt (skin/size/opacity/nhạc/autostart)
+   ├─ timer_popup.py     #   popup chọn thời gian
+   ├─ tray.py            #   system tray
+   └─ theme.py           #   QSS style
+assets/pet/              # pet skins (user thêm)
+assets/music/            # nhạc (user thêm)
 ```
 
 ## Credits

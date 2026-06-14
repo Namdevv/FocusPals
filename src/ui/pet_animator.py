@@ -21,8 +21,8 @@ from PySide6.QtCore import QRect, Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QLabel
 
-from .paths import asset
-from .states import PetState
+from ..core.paths import asset
+from ..core.states import PetState
 
 # fps theo state: focus chạy nhanh, idle chậm
 FPS = {

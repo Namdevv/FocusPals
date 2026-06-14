@@ -15,8 +15,10 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import autostart, storage, theme
-from .paths import asset
+from . import theme
+from ..core import storage
+from ..core.paths import asset
+from ..services import autostart
 
 AUDIO_EXT = (".mp3", ".wav", ".ogg", ".m4a", ".flac")
 

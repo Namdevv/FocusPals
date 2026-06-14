@@ -3,13 +3,13 @@ from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QApplication, QMenu, QWidget
 
-from . import storage
-from .music_player import MusicPlayer
-from .notify import notify
+from ..core import storage
+from ..core.states import PetState
+from ..core.timer import CountdownTimer
+from ..services.music_player import MusicPlayer
+from ..services.notify import notify
 from .pet_animator import PetAnimator
 from .settings_dialog import SettingsDialog
-from .states import PetState
-from .timer import CountdownTimer
 from .timer_popup import TimerPopup
 
 PET_SIZE = 200
