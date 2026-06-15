@@ -5,8 +5,10 @@ import sys
 # src lên path để import package
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
+from src.core.paths import asset
 from src.ui.pet_window import PetWindow
 from src.ui.tray import make_tray
 
@@ -15,6 +17,10 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Agent Pet Timer")
     app.setQuitOnLastWindowClosed(False)  # đóng popup không thoát app
+
+    icon = asset("icon.ico")
+    if os.path.isfile(icon):
+        app.setWindowIcon(QIcon(icon))
 
     window = PetWindow()
     window.tray = make_tray(app, window)
