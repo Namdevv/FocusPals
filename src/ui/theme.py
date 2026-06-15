@@ -3,7 +3,8 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsDropShadowEffect
 
 # palette
-BG = "#16171f"        # nền card
+BG = "#16171f"        # nền cửa sổ
+CARD = "#1b1c26"      # nền nhóm (giữa BG & SURFACE)
 SURFACE = "#21232e"   # input nền
 SURFACE2 = "#2b2d3a"  # hover / pill
 BORDER = "#2f3142"
@@ -144,6 +145,11 @@ QLineEdit:focus {{ border: 1px solid {ACCENT}; }}
 }}
 #preview {{
     background: {SURFACE}; border: 1px solid {BORDER}; border-radius: 12px;
+}}
+
+/* nhóm cài đặt (card nhô trên nền cửa sổ) */
+#group {{
+    background: {CARD}; border: 1px solid {BORDER}; border-radius: 14px;
 }}
 
 QScrollArea {{ background: transparent; border: none; }}

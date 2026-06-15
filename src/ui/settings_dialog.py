@@ -1,6 +1,7 @@
 """Settings: cửa sổ đầy đủ (sidebar trái + trang nội dung), không phải popup.
 
-Trang: Pet · Hiển thị · Khung chat · Nhạc · Tạo pet · Hệ thống · Thông tin.
+Trang: Giao diện · Nhạc · Tạo pet · Hệ thống.
+Mỗi trang gom các nhóm liên quan vào card (#group) cho gọn, ít nhảy nav.
 Trang "Tạo pet": upload spritesheet/PNG → tự xoá nền caro → check → lưu skin.
 """
 import os
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
     QColorDialog,
     QComboBox,
     QFileDialog,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -26,7 +28,9 @@ from PySide6.QtWidgets import (
 )
 
 from . import pet_builder, theme
+from .pet_animator import PetAnimator
 from ..core import skins, storage
+from ..core.states import PetState
 from ..core.paths import asset
 from ..services import autostart
 
@@ -34,13 +38,10 @@ AUDIO_EXT = (".mp3", ".wav", ".ogg", ".m4a", ".flac")
 IMG_FILTER = "Ảnh (*.png *.webp *.gif *.jpg *.jpeg)"
 
 NAV = [
-    "🐾  Pet",
-    "🖥  Hiển thị",
-    "💬  Khung chat",
+    "🐾  Giao diện",
     "🎵  Nhạc",
     "✨  Tạo pet",
     "⚙  Hệ thống",
-    "ℹ  Thông tin",
 ]
 
 
@@ -81,13 +82,10 @@ class SettingsDialog(QWidget):
         root.addWidget(self.stack, 1)
 
         for builder in (
-            self._page_pet,
-            self._page_display,
-            self._page_bubble,
+            self._page_appearance,
             self._page_music,
             self._page_create,
             self._page_system,
-            self._page_info,
         ):
             self.stack.addWidget(self._scroll(builder))
 
@@ -106,6 +104,18 @@ class SettingsDialog(QWidget):
         return sc
 
     # ---- widget helper ----
+    def _group(self, box, title=None):
+        """Card nhóm các control liên quan; trả layout bên trong để add tiếp."""
+        card = QFrame()
+        card.setObjectName("group")
+        gl = QVBoxLayout(card)
+        gl.setContentsMargins(18, 15, 18, 16)
+        gl.setSpacing(10)
+        if title:
+            self._section(gl, title)
+        box.addWidget(card)
+        return gl
+
     def _title(self, box, text):
         lbl = QLabel(text)
         lbl.setObjectName("title")
@@ -139,26 +149,38 @@ class SettingsDialog(QWidget):
         return sl, v
 
     # ======== PAGES ========
-    def _page_pet(self, box):
-        self._title(box, "🐾  Pet")
-        self._section(box, "CHỌN SKIN")
+    def _page_appearance(self, box):
+        self._title(box, "🐾  Giao diện")
+
+        # ---- nhóm: skin + preview ----
+        g = self._group(box, "PET / SKIN")
         self.pet = QComboBox()
         self.pet.setCursor(Qt.PointingHandCursor)
         self.pet.currentIndexChanged.connect(self._on_pet)
-        box.addWidget(self.pet)
-        self._hint(box, "Skin mới tạo ở trang “Tạo pet” sẽ hiện ở đây.")
-        self._load_skins()
+        g.addWidget(self.pet)
+        self._hint(g, "Skin mới tạo ở trang “Tạo pet” sẽ hiện ở đây.")
 
-    def _page_display(self, box):
-        self._title(box, "🖥  Hiển thị")
+        self.pet_preview = PetAnimator()
+        self.pet_preview.set_size(170)
+        self.pet_preview.set_state(PetState.IDLE)
+        frame = QFrame()
+        frame.setObjectName("preview")
+        frame.setMinimumHeight(210)
+        fl = QVBoxLayout(frame)
+        fl.setContentsMargins(0, 0, 0, 0)
+        fl.addWidget(self.pet_preview, 0, Qt.AlignCenter)
+        g.addWidget(frame)
+
+        # ---- nhóm: hiển thị ----
+        g2 = self._group(box, "HIỂN THỊ")
         self.size, self.size_v = self._slider_row(
-            box, "KÍCH THƯỚC", 120, 360, int(self.s.get("pet_size", 200))
+            g2, "KÍCH THƯỚC", 64, 360, int(self.s.get("pet_size", 200))
         )
         self.size.valueChanged.connect(self._on_size)
         self._on_size(self.size.value(), save=False)
 
         self.op, self.op_v = self._slider_row(
-            box, "ĐỘ TRONG SUỐT", 30, 100, int(self.s.get("opacity", 100))
+            g2, "ĐỘ TRONG SUỐT", 30, 100, int(self.s.get("opacity", 100))
         )
         self.op.valueChanged.connect(self._on_opacity)
         self._on_opacity(self.op.value(), save=False)
@@ -166,12 +188,12 @@ class SettingsDialog(QWidget):
         self.top = QCheckBox("Luôn nổi trên cùng")
         self.top.setChecked(bool(self.s.get("always_on_top", True)))
         self.top.toggled.connect(self._on_top)
-        box.addSpacing(6)
-        box.addWidget(self.top)
+        g2.addSpacing(4)
+        g2.addWidget(self.top)
 
-    def _page_bubble(self, box):
-        self._title(box, "💬  Khung chat")
-        self._hint(box, "Khung đếm ngược + câu động lực nổi trên đầu pet lúc focus.")
+        # ---- nhóm: khung chat ----
+        g3 = self._group(box, "KHUNG CHAT")
+        self._hint(g3, "Khung đếm ngược + câu động lực nổi trên đầu pet lúc focus.")
         crow = QHBoxLayout()
         cl = QLabel("MÀU NỀN")
         cl.setObjectName("section")
@@ -180,65 +202,67 @@ class SettingsDialog(QWidget):
         self.color_btn.clicked.connect(self._on_bubble_color)
         self._update_color_btn()
         crow.addWidget(cl)
+        crow.addStretch(1)
         crow.addWidget(self.color_btn)
-        box.addLayout(crow)
+        g3.addLayout(crow)
 
         self.bop, self.bop_v = self._slider_row(
-            box, "ĐỘ MỜ NỀN", 50, 100, int(self.s.get("bubble_opacity", 95))
+            g3, "ĐỘ MỜ NỀN", 50, 100, int(self.s.get("bubble_opacity", 95))
         )
         self.bop.valueChanged.connect(self._on_bubble_opacity)
         self.bop_v.setText(f"{self.bop.value()}%")
 
+        self._load_skins()
+        self.pet_preview.set_skin(self.pet.currentData() or "")
+
     def _page_music(self, box):
         self._title(box, "🎵  Nhạc")
-        self._section(box, "NHẠC MẶC ĐỊNH")
+        g = self._group(box, "NHẠC NỀN KHI FOCUS")
         self.music = QComboBox()
         self.music.setCursor(Qt.PointingHandCursor)
         self.music.currentIndexChanged.connect(self._on_music)
-        box.addWidget(self.music)
+        g.addWidget(self.music)
         add = QPushButton("➕  Thêm nhạc từ máy")
         add.setObjectName("ghost")
         add.setCursor(Qt.PointingHandCursor)
         add.clicked.connect(self._add_music)
-        box.addWidget(add)
+        g.addWidget(add)
         self._load_music()
 
         self.vol, self.vol_v = self._slider_row(
-            box, "ÂM LƯỢNG", 0, 100, int(self.s.get("volume", 60))
+            g, "ÂM LƯỢNG", 0, 100, int(self.s.get("volume", 60))
         )
         self.vol.valueChanged.connect(self._on_volume)
         self.vol_v.setText(f"{self.vol.value()}%")
 
     def _page_system(self, box):
         self._title(box, "⚙  Hệ thống")
+
+        g = self._group(box, "KHỞI ĐỘNG & VỊ TRÍ")
         self.auto = QCheckBox("Chạy cùng Windows")
         self.auto.setChecked(autostart.is_enabled())
         self.auto.toggled.connect(self._on_auto)
-        box.addWidget(self.auto)
-
-        box.addSpacing(8)
+        g.addWidget(self.auto)
         reset = QPushButton("↺  Đặt lại vị trí pet")
         reset.setObjectName("ghost")
         reset.setCursor(Qt.PointingHandCursor)
         reset.clicked.connect(self._reset_pos)
-        box.addWidget(reset)
+        g.addSpacing(4)
+        g.addWidget(reset)
 
-    def _page_info(self, box):
-        self._title(box, "ℹ  Thông tin")
-        self._section(box, "ỨNG DỤNG")
-        self._hint(box, "FocusPals — desktop pet + Pomodoro. Render PNG sprite (Qt thuần).")
-        self._section(box, "DỮ LIỆU")
-        self._hint(box, f"Settings & lịch sử: {storage.APP_DIR}")
-        self._hint(box, f"Pet bundled: {skins.bundled_dir()}")
-        self._hint(box, f"Pet tự tạo: {skins.USER_PETS_DIR}")
-        self._section(box, "ĐỊNH DẠNG PET (petdex)")
+        g2 = self._group(box, "THÔNG TIN")
+        self._hint(g2, "FocusPals — desktop pet + Pomodoro. Render PNG sprite (Qt thuần).")
+        self._hint(g2, f"Settings & lịch sử: {storage.APP_DIR}")
+        self._hint(g2, f"Pet bundled: {skins.bundled_dir()}")
+        self._hint(g2, f"Pet tự tạo: {skins.USER_PETS_DIR}")
+
+        g3 = self._group(box, "ĐỊNH DẠNG PET (petdex)")
         self._hint(
-            box,
+            g3,
             "Spritesheet cắt bằng alpha-gutter: mỗi HÀNG = 1 clip "
             "(idle/focus/break/done), mỗi CỘT = 1 frame. Nền phải trong suốt.",
         )
-        self._section(box, "CREDITS")
-        self._hint(box, "Tương thích pet pack format petdex. MIT © 2026 Nam TRAN.")
+        self._hint(g3, "Tương thích pet pack format petdex. MIT © 2026 Nam TRAN.")
 
     # ======== PAGE: TẠO PET ========
     def _page_create(self, box):
@@ -249,14 +273,16 @@ class SettingsDialog(QWidget):
             "App tự xoá nền caro, kiểm tra rồi lưu thành skin.",
         )
 
-        self._section(box, "TÊN SKIN")
+        # ---- nhóm: nguồn ----
+        g = self._group(box, "NGUỒN")
+        self._section(g, "TÊN SKIN")
         self.create_name = QLineEdit()
         self.create_name.setPlaceholderText("vd: my_cat")
-        box.addWidget(self.create_name)
+        g.addWidget(self.create_name)
 
         self.auto_clean = QCheckBox("Tự xoá nền caro / nền đặc (alpha → trong suốt)")
         self.auto_clean.setChecked(True)
-        box.addWidget(self.auto_clean)
+        g.addWidget(self.auto_clean)
 
         prow = QHBoxLayout()
         prow.setSpacing(8)
@@ -270,9 +296,10 @@ class SettingsDialog(QWidget):
         b_png.clicked.connect(self._pick_pngs)
         prow.addWidget(b_sheet)
         prow.addWidget(b_png)
-        box.addLayout(prow)
+        g.addLayout(prow)
 
-        # preview + kết quả check
+        # ---- nhóm: kiểm tra (preview + kết quả) ----
+        g2 = self._group(box, "KIỂM TRA")
         mid = QHBoxLayout()
         mid.setSpacing(12)
         self.preview = QLabel("preview")
@@ -285,7 +312,7 @@ class SettingsDialog(QWidget):
         self.create_result.setReadOnly(True)
         self.create_result.setMinimumHeight(120)
         mid.addWidget(self.create_result, 1)
-        box.addLayout(mid)
+        g2.addLayout(mid)
 
         self.create_btn = QPushButton("✨  Tạo pet")
         self.create_btn.setObjectName("primary")
@@ -423,6 +450,8 @@ class SettingsDialog(QWidget):
     def _on_pet(self):
         skin = self.pet.currentData() or ""
         self.win.apply_skin(skin)
+        if hasattr(self, "pet_preview"):
+            self.pet_preview.set_skin(skin)
         self._save(pet_skin=skin)
 
     def _on_size(self, v, save=True):
