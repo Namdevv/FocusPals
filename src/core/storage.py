@@ -22,6 +22,9 @@ DEFAULTS = {
     "opacity": 100,          # 30..100
     "always_on_top": True,
     "autostart": False,
+    "last_break": 5,         # phút nghỉ giữa giờ (0 = tắt)
+    "bubble_color": "#ffffff",   # nền khung chat
+    "bubble_opacity": 95,    # độ đậm nền khung chat 50..100
 }
 
 

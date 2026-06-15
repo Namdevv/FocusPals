@@ -21,11 +21,13 @@ from ..core.paths import asset
 
 AUDIO_EXT = (".mp3", ".wav", ".ogg", ".m4a", ".flac")
 PRESETS = [15, 25, 45, 60]
+BREAK_PRESETS = [0, 5, 10, 15]  # 0 = tắt nghỉ
 MIN_M, MAX_M, STEP_M = 1, 180, 5
 
 
 class TimerPopup(QWidget):
-    startRequested = Signal(int, str, int)  # minutes, music_path, volume
+    # focus_minutes, break_minutes, music_path, volume
+    startRequested = Signal(int, int, str, int)
     stopRequested = Signal()
 
     def __init__(self, parent=None):
@@ -37,9 +39,12 @@ class TimerPopup(QWidget):
         self.s = storage.load_settings()
         self._running = False
         self._minutes = int(self.s.get("last_minutes", 25))
+        self._break = int(self.s.get("last_break", 5))
         self._pills = {}
+        self._break_pills = {}
         self._build()
         self._refresh_time()
+        self._refresh_break()
 
     def _build(self):
         outer = QVBoxLayout(self)
@@ -100,6 +105,21 @@ class TimerPopup(QWidget):
         lay.addLayout(step)
         self._stepper = [minus, plus]
 
+        # nghỉ giữa giờ (Pomodoro)
+        secb = QLabel("NGHỈ GIỮA GIỜ")
+        secb.setObjectName("section")
+        lay.addWidget(secb)
+        bgrid = QGridLayout()
+        bgrid.setSpacing(6)
+        for i, m in enumerate(BREAK_PRESETS):
+            b = QPushButton("Tắt" if m == 0 else f"{m}m")
+            b.setProperty("pill", True)
+            b.setCursor(Qt.PointingHandCursor)
+            b.clicked.connect(lambda _=False, mm=m: self._set_break(mm))
+            bgrid.addWidget(b, 0, i)
+            self._break_pills[m] = b
+        lay.addLayout(bgrid)
+
         # nhạc
         sec1 = QLabel("NHẠC")
         sec1.setObjectName("section")
@@ -155,6 +175,16 @@ class TimerPopup(QWidget):
             "tùy chỉnh" if is_preset else f"{self._minutes} phút"
         )
 
+    def _set_break(self, m):
+        self._break = int(m)
+        self._refresh_break()
+
+    def _refresh_break(self):
+        for m, b in self._break_pills.items():
+            b.setProperty("on", m == self._break)
+            b.style().unpolish(b)
+            b.style().polish(b)
+
     # ---- music ----
     def _load_music(self, select: str = None):
         self.music.clear()
@@ -187,13 +217,18 @@ class TimerPopup(QWidget):
             self.stopRequested.emit()
         else:
             self.startRequested.emit(
-                self._minutes, self.music.currentData() or "", self.vol.value()
+                self._minutes,
+                self._break,
+                self.music.currentData() or "",
+                self.vol.value(),
             )
 
     def _set_controls_enabled(self, on: bool):
         for b in self._pills.values():
             b.setEnabled(on)
         for b in self._stepper:
+            b.setEnabled(on)
+        for b in self._break_pills.values():
             b.setEnabled(on)
         self.music.setEnabled(on)
 

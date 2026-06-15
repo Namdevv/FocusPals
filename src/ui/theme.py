@@ -29,6 +29,11 @@ QLabel {{ color: {TEXT}; font-size: 12px; }}
 
 #timeBig {{ color: {TEXT}; font-size: 36px; font-weight: 800; }}
 
+/* focus bubble nổi trên đầu pet (nhỏ gọn) */
+#bubbleTime {{ color: {SKY}; font-size: 17px; font-weight: 800;
+    letter-spacing: 1px; }}
+#bubbleMsg {{ color: {TEXT}; font-size: 11px; font-weight: 600; }}
+
 /* preset pills */
 QPushButton[pill="true"] {{
     background: {SURFACE};
@@ -110,6 +115,59 @@ QCheckBox::indicator {{
     border: 1px solid {BORDER}; background: {SURFACE};
 }}
 QCheckBox::indicator:checked {{ background: {ACCENT}; border: 1px solid {ACCENT}; }}
+
+/* ---- settings window (sidebar + stacked pages) ---- */
+#settingsWindow {{ background: {BG}; }}
+#stack {{ background: {BG}; }}
+
+#nav {{
+    background: {SURFACE}; border: none; outline: none; padding: 10px 8px;
+}}
+#nav::item {{
+    color: {SUBTEXT}; padding: 11px 14px; border-radius: 10px;
+    margin: 2px 2px; font-size: 13px;
+}}
+#nav::item:hover {{ background: {SURFACE2}; color: {TEXT}; }}
+#nav::item:selected {{ background: {ACCENT}; color: white; font-weight: 600; }}
+
+QLineEdit {{
+    background: {SURFACE}; color: {TEXT};
+    border: 1px solid {BORDER}; border-radius: 10px;
+    padding: 8px 11px; font-size: 12px;
+}}
+QLineEdit:focus {{ border: 1px solid {ACCENT}; }}
+
+#result {{
+    background: {SURFACE}; color: {TEXT};
+    border: 1px solid {BORDER}; border-radius: 10px;
+    padding: 8px; font-size: 11px;
+}}
+#preview {{
+    background: {SURFACE}; border: 1px solid {BORDER}; border-radius: 12px;
+}}
+
+QScrollArea {{ background: transparent; border: none; }}
+QScrollArea > QWidget > QWidget {{ background: transparent; }}
+QScrollBar:vertical {{
+    background: transparent; width: 10px; margin: 2px;
+}}
+QScrollBar::handle:vertical {{
+    background: {SURFACE2}; border-radius: 5px; min-height: 28px;
+}}
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{ height: 0; }}
+
+/* ---- font lớn hơn riêng trong settings (không đụng popup/bubble) ---- */
+#settingsWindow QLabel {{ font-size: 14px; }}
+#settingsWindow #title {{ font-size: 19px; font-weight: 700; }}
+#settingsWindow #section {{ font-size: 12px; letter-spacing: 1px; }}
+#settingsWindow #hint {{ font-size: 12px; }}
+#settingsWindow #value {{ font-size: 13px; }}
+#settingsWindow QComboBox {{ font-size: 14px; padding: 9px 12px; }}
+#settingsWindow QLineEdit {{ font-size: 14px; padding: 9px 12px; }}
+#settingsWindow QCheckBox {{ font-size: 14px; }}
+#settingsWindow QPushButton {{ font-size: 14px; }}
+#settingsWindow #result {{ font-size: 13px; }}
+#nav::item {{ font-size: 14px; }}
 """
 
 

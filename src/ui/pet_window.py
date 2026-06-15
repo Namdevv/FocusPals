@@ -8,6 +8,7 @@ from ..core.states import PetState
 from ..core.timer import CountdownTimer
 from ..services.music_player import MusicPlayer
 from ..services.notify import notify
+from .focus_bubble import FocusBubble
 from .pet_animator import PetAnimator
 from .settings_dialog import SettingsDialog
 from .timer_popup import TimerPopup
@@ -22,6 +23,8 @@ class PetWindow(QWidget):
         self.tray = None
         self.settings = storage.load_settings()
         self._session_minutes = 0
+        self._break_minutes = 0
+        self._phase = "idle"
         self._drag_off = None
         self._press_pos = None
         self._moved = False
@@ -50,6 +53,12 @@ class PetWindow(QWidget):
         self.popup = TimerPopup(self)
         self.popup.startRequested.connect(self.start_focus)
         self.popup.stopRequested.connect(self.stop_focus)
+
+        self.bubble = FocusBubble(self)
+        self.bubble.set_appearance(
+            str(self.settings.get("bubble_color", "#ffffff")),
+            int(self.settings.get("bubble_opacity", 95)),
+        )
 
         self.settings_dialog = SettingsDialog(self)
 
@@ -93,6 +102,8 @@ class PetWindow(QWidget):
             self._moved = True
         if self._drag_off is not None:
             self.move(gpos - self._drag_off)
+        if self.bubble.isVisible():
+            self.bubble.place_above(self.frameGeometry())
 
     def mouseReleaseEvent(self, e):
         if e.button() != Qt.LeftButton:
@@ -157,8 +168,7 @@ class PetWindow(QWidget):
             self.settings_dialog.hide()
             return
         self.popup.hide()                # mở Settings -> tắt Timer
-        self.settings_dialog.show()
-        self._place_near_pet(self.settings_dialog)
+        self.settings_dialog.show()      # cửa sổ đầy đủ, tự center
 
     def apply_size(self, px: int):
         self._size = int(px)
@@ -172,6 +182,9 @@ class PetWindow(QWidget):
     def apply_skin(self, skin: str):
         self.animator.set_skin(skin or "")
 
+    def apply_bubble(self, color: str, opacity: int):
+        self.bubble.set_appearance(color, opacity)
+
     def set_always_on_top(self, on: bool):
         pos = self.pos()
         self._apply_flags(on)
@@ -179,11 +192,18 @@ class PetWindow(QWidget):
         self.show()  # re-apply flags cần show lại
 
     # ---- focus flow ----
-    def start_focus(self, minutes: int, music_path: str, volume: int):
+    def start_focus(self, minutes: int, break_minutes: int, music_path: str, volume: int):
         self._session_minutes = minutes
+        self._break_minutes = int(break_minutes)
+        self._phase = "focus"
         self.music.set_volume(volume)
         self.settings.update(
-            {"volume": volume, "last_music": music_path, "last_minutes": minutes}
+            {
+                "volume": volume,
+                "last_music": music_path,
+                "last_minutes": minutes,
+                "last_break": int(break_minutes),
+            }
         )
         storage.save_settings(self.settings)
 
@@ -193,16 +213,39 @@ class PetWindow(QWidget):
         self.timer.start(minutes * 60)
         self.popup.set_running(True)
 
+        # ẩn popup, hiện bubble đếm ngược + câu động lực trên đầu pet (animation)
+        self.popup.hide()
+        self.bubble.start(minutes * 60)
+        self.bubble.animate_in(self.frameGeometry())
+
+    def _start_break(self):
+        """Tự chuyển sang nghỉ sau khi focus xong."""
+        self._phase = "break"
+        self.set_state(PetState.BREAK)
+        self.timer.start(self._break_minutes * 60)
+        self.bubble.start(self._break_minutes * 60, break_mode=True)
+        self.bubble.animate_in(self.frameGeometry())
+
     def stop_focus(self):
+        self._phase = "idle"
         self.timer.stop()
         self.music.stop()
+        self.bubble.hide()
         self.set_state(PetState.IDLE)
         self.popup.set_idle()
 
     def _on_tick(self, remaining: int):
         self.popup.set_remaining(remaining)
+        if self.bubble.isVisible():
+            self.bubble.set_remaining(remaining)
+            self.bubble.place_above(self.frameGeometry())
 
     def _on_finished(self):
+        if self._phase == "break":
+            self._on_break_finished()
+            return
+
+        # focus xong
         self.music.stop()
         self.set_state(PetState.DONE)
         storage.add_history(self._session_minutes)
@@ -212,4 +255,31 @@ class PetWindow(QWidget):
             self.tray,
         )
         self.popup.set_idle()
-        QTimer.singleShot(5000, lambda: self.set_state(PetState.IDLE))
+
+        if self._break_minutes > 0:
+            self.bubble.show_done()
+            self.bubble.place_above(self.frameGeometry())
+            QTimer.singleShot(3000, self._maybe_break)
+        else:
+            self.bubble.show_done()
+            self.bubble.place_above(self.frameGeometry())
+            QTimer.singleShot(5000, self._after_done)
+
+    def _maybe_break(self):
+        # user đã start session mới trong lúc chờ -> thôi
+        if self.timer.is_running():
+            return
+        self._start_break()
+
+    def _on_break_finished(self):
+        self._phase = "idle"
+        notify("Hết giờ nghỉ ☕", "Sẵn sàng cho phiên focus tiếp theo nhé!", self.tray)
+        self.bubble.hide()
+        self.set_state(PetState.IDLE)
+
+    def _after_done(self):
+        # tránh ghi đè nếu user đã start session mới trong 5s
+        if self.timer.is_running():
+            return
+        self.bubble.hide()
+        self.set_state(PetState.IDLE)

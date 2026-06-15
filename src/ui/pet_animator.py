@@ -21,7 +21,7 @@ from PySide6.QtCore import QRect, Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import QLabel
 
-from ..core.paths import asset
+from ..core import skins
 from ..core.states import PetState
 
 # fps theo state: focus chạy nhanh, idle chậm
@@ -148,7 +148,7 @@ class PetAnimator(QLabel):
 
     # ---- skin loading ----
     def _skin_dir(self) -> str:
-        return asset("pet", self._skin) if self._skin else asset("pet")
+        return skins.skin_dir(self._skin)
 
     def _find_spritesheet(self, d) -> str:
         """Path sheet trong folder. pet.json là optional (chỉ để chỉ đúng file)."""
